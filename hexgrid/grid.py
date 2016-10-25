@@ -12,8 +12,6 @@ IMGS = ["imgs/hex_tile_grass.png"
        ,"imgs/hex_tile_water.png"
        ,"imgs/hex_tile_rocks.png"]
 
-ADJACENTS   = [(0, 1), (0, -1), (1, 0), (-1, 0), (1, -1), (1, 1)]
-
 class Grid:
     def rectToHex(self, i, j):
         y = math.floor(j*4/self.size/3)
@@ -25,6 +23,15 @@ class Grid:
         x = i*self.size + j*self.size/2
         y = j*self.size*3/4
         return (x, y)
+
+    def hexDistance(self, ai, aj, bi, bj):
+        ati = ai - math.floor(aj/2)
+        bti = bi - math.floor(bj/2)
+        return ( abs(ati - bti) 
+               + abs(ati + aj - bti - bj)
+               + abs(aj - bj)) / 2
+        
+
 
     def __init__(self, width = 10, height = 10, size = 32):
         self.width  = width
@@ -57,13 +64,11 @@ class Grid:
     def setTile(self, i, j, k):
         self.tiles[Tile(i, j)] = k
 
+    def getBetween(self, i, j, n, f):
+        return [(x, y)
+                for x in range(0, self.width)
+                for y in range(0, self.height)
+                if n <= self.hexDistance(i, j, x, y) <= f]
+
     def getAdjacent(self, i, j):
-        if j%2 == 0:
-            return [(x + i - (y + j)%2, y + j) 
-                    for (x, y) in ADJACENTS
-                    if self.inRange(x + i - (y + j)%2, y + j)]
-        else:
-            return [(x + i, y + j) 
-                    for (x, y) in ADJACENTS
-                    if self.inRange(x + i, y + j)]
-            
+        return self.getBetween(i, j, 1, 1)

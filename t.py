@@ -11,7 +11,7 @@ grid   = hexgrid.grid.Grid()
 X, Y = (5, 5)
 
 grid.setTile(X, Y, hexgrid.grid.WATER)
-for (i, j) in grid.getAdjacent(X, Y):
+for (i, j) in grid.getBetween(X, Y, 2, 5):
     grid.setTile(i, j, hexgrid.grid.ROCKS)
 
 while True:
