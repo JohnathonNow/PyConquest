@@ -7,9 +7,11 @@ size = width, height = 656, int(656*3/4)
 black = 0, 0, 0
 Vx, Vy = 0, 0
 dvx, dvy = 0, 0
-
+gWidth = 600
+gSize = 64
+gTileW = gWidth*gSize - width + gSize
 screen = pygame.display.set_mode(size)
-g   = grid.Grid(600,600,64)
+g   = grid.Grid(gWidth, gWidth, gSize)
 X, Y = (5, 5)
 
 g.setTile(X, Y, grid.WATER)
@@ -42,9 +44,12 @@ while True:
             elif event.key == 273:
                 dvy = -1
                 
-    Vx += dvx
-    Vy += dvy
-    print Vx, Vy
+    Vx += dvx*32
+    Vy += dvy*32
+    if Vx < 0: Vx = 0
+    if Vy < 0: Vy = 0
+    if Vx > gTileW: Vx = gTileW
+    if Vy > gTileW: Vy = gTileW
     screen.fill(black)
     g.draw(screen, Vx, Vy)
     pygame.display.flip()

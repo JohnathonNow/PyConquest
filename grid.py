@@ -54,12 +54,15 @@ class Grid:
         if vy < 0: vy = 0
         xi, yi = self.rectToHex(vx, vy)
         xo, yo = self.rectToHex(screen.get_width(),screen.get_height())
-        for i in range(0, xo):
-            for j in range(0, yo):
+        for i in range(-2, xo+2):
+            for j in range(-2, yo+2):
+                if not self.inRange(i + xi, j + yi): continue
                 tile = self.tiles[Tile(i + xi, j + yi)]
                 img  = self._imgs[tile]
                 rct  = self._rect[tile]
-                rct.x, rct.y = self.hexToRect(i, j)
+                rct.x, rct.y = self.hexToRect(i + xi, j + yi)
+                rct.x -= vx
+                rct.y -= vy
                 screen.blit(img, rct)
 
     def inRange(self, i, j):
