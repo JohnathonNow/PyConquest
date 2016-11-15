@@ -1,8 +1,6 @@
-from collections import namedtuple
 import pygame
 import math
 
-Tile = namedtuple("Tile", ["x", "y"])
 
 GRASS = 0
 WATER = 1
@@ -37,11 +35,7 @@ class Grid:
         self.width  = width
         self.height = height
         self.size   = size
-        self.tiles  = {}
-        for x in range(0, width):
-            for y in range(0, height):
-                self.tiles[Tile(x, y)] = GRASS
-
+        self.tiles  = [[GRASS for x in range(0, width)] for y in range(0, height)]
         self._imgs        = {}
         self._rect        = {}
         for i in range(0, len(IMGS)):
@@ -57,7 +51,7 @@ class Grid:
         for i in range(-2, xo+2):
             for j in range(-2, yo+2):
                 if not self.inRange(i + xi, j + yi): continue
-                tile = self.tiles[Tile(i + xi, j + yi)]
+                tile = self.tiles[i + xi][j + yi]
                 img  = self._imgs[tile]
                 rct  = self._rect[tile]
                 rct.x, rct.y = self.hexToRect(i + xi, j + yi)
@@ -69,7 +63,7 @@ class Grid:
         return (i >= 0 and i < self.width and j >= 0 and j < self.height)
 
     def setTile(self, i, j, k):
-        self.tiles[Tile(i, j)] = k
+        self.tiles[i][j] = k
 
     def getBetween(self, i, j, n, f):
         return [(x, y)
