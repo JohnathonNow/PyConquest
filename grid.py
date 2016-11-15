@@ -45,12 +45,12 @@ class Grid:
         self._imgs  = {}
         for i in range(0, len(IMGS)):
             self._imgs[i] = pygame.image.load(IMGS[i])
-            self._imgs[i] = pygame.transform.scale(self._imgs[i], (size, size))
+            self._imgs[i] = pygame.transform.scale(self._imgs[i], (size, size)).convert_alpha()
         self._rect = self._imgs[0].get_rect()
         self.selectedX = []
         self.selectedY = []
         self._simg = pygame.image.load(SelIMG)
-        self._simg = pygame.transform.scale(self._simg, (size, size))
+        self._simg = pygame.transform.scale(self._simg, (size, size)).convert_alpha()
 
     def draw(self, screen, vx, vy):
         if vx < 0: vx = 0
