@@ -11,10 +11,13 @@ IMGS = ["imgs/hex_tile_grass.png"
        ,"imgs/hex_tile_rocks.png"]
 
 SelIMG = "imgs/hex_tile_sel.png"
+UnseenIMG = "imgs/hex_tile_unknown.png"
 
 class Tile:
     def __init__(self, t=GRASS):
         self.type = t
+        self.units = 0
+        self.known = False
 
 class Grid:
     def rectToHex(self, i, j):
@@ -47,10 +50,11 @@ class Grid:
             self._imgs[i] = pygame.image.load(IMGS[i])
             self._imgs[i] = pygame.transform.scale(self._imgs[i], (size, size)).convert_alpha()
         self._rect = self._imgs[0].get_rect()
-        self.selectedX = []
-        self.selectedY = []
+        self.selected = []
         self._simg = pygame.image.load(SelIMG)
         self._simg = pygame.transform.scale(self._simg, (size, size)).convert_alpha()
+        self._uimg = pygame.image.load(UnseenIMG)
+        self._uimg = pygame.transform.scale(self._uimg, (size, size)).convert_alpha()
 
     def draw(self, screen, vx, vy):
         if vx < 0: vx = 0
@@ -61,33 +65,40 @@ class Grid:
             for j in range(-2, yo+2):
                 if not self.inRange(i + xi, j + yi): continue
                 tile = self.tiles[i + xi][j + yi]
-                img  = self._imgs[tile.type]
+                if tile.known:
+                    img  = self._imgs[tile.type]
+                else:
+                    img = self._uimg
                 self._rect.x, self._rect.y = self.hexToRect(i + xi, j + yi)
                 self._rect.x -= vx
                 self._rect.y -= vy
                 screen.blit(img, self._rect)
-                if (i + xi) in self.selectedX and (j + yi) in self.selectedY:
+                if tile in self.selected:
                     screen.blit(self._simg, self._rect)
 
     def inRange(self, i, j):
         return (i >= 0 and i < self.width and j >= 0 and j < self.height)
+
+    def getTile(self, i, j):
+        return self.tiles[i][j]
 
     def setTile(self, i, j, k):
         self.tiles[i][j].type = k
 
     def getBetween(self, i, j, n, f):
         return [(x, y)
-                for x in range(0, self.width)
-                for y in range(0, self.height)
+                for x in range(i-n-f-f, i+n+f+f)
+                for y in range(j-n-f-f, j+n+f+f)
                 if n <= self.hexDistance(i, j, x, y) <= f]
 
     def select(self, i, j):
-        self.selectedX.append(i)
-        self.selectedY.append(j)
+        if self.tiles[i][j].known:
+            self.selected.append(self.tiles[i][j])
+            return True
+        return False
 
     def clearSelection(self):
-        self.selectedX = []
-        self.selectedY = []
+        self.selected = []
 
     def getAdjacent(self, i, j):
         return self.getBetween(i, j, 1, 1)
