@@ -21,7 +21,7 @@ menu = pygame.image.load("imgs/menu.png")
 menu = pygame.transform.scale(menu, size).convert_alpha()
 menu_rect = menu.get_rect()
 menu_font = pygame.font.SysFont("monospace", 15)
-
+g.getTile(2, 2).units = 5
 g.setTile(X, Y, grid.WATER)
 for (i, j) in g.getBetween(X, Y, 2, 5):
     g.setTile(i, j, grid.ROCKS)
