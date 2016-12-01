@@ -3,9 +3,11 @@ import sys, pygame, math, grid
 
 pygame.init()
 
+cityData = {}
+cityData["Tenochtitlan"] = {"Population" : 1000000, "Troops" : 2000, "Resources" : 300, "Smallpox" : "No", "Starvation" : "No"}
 size = width, height = 656, int(656)
 black = 0, 0, 0
-Vx, Vy = 0, 0
+Vx, Vy = 0,0
 dvx, dvy = 0, 0
 gWidth = 600
 gSize = 64
@@ -22,10 +24,10 @@ menu = pygame.transform.scale(menu, size).convert_alpha()
 menu_rect = menu.get_rect()
 menu_font = pygame.font.SysFont("monospace", 15)
 g.getTile(2, 2).units = 5
-g.setTile(X, Y, grid.WATER)
-for (i, j) in g.getBetween(X, Y, 2, 5):
-    g.setTile(i, j, grid.ROCKS)
-
+#g.setTile(X, Y, grid.WATER, "n/a")
+#for (i, j) in g.getBetween(X, Y, 2, 5):
+#    g.setTile(i, j, grid.ROCKS, "n/a")
+#g.setTile(3, 3, grid.CITY, "Tenochtitlan")
 for (i, j) in g.getBetween(0, 0, 0, 5):
     g.getTile(i, j).known = True
 
@@ -38,9 +40,11 @@ while True:
                 xx, yy = g.rectToHex(mx + Vx, my + Vy)
                 g.clearSelection()
                 g.select(xx, yy)
+                g.setVisible()
                 if g.selected:
                     for (i, j) in g.getBetween(xx, yy, 0, 1):
                         g.getTile(i, j).known = True
+                        g.getTile(i,j).visible = True
         if event.type == pygame.KEYUP:
             if event.key == 276:
                 dvx = 0
@@ -70,15 +74,24 @@ while True:
     g.draw(screen, Vx, Vy)
     screen.blit(menu, menu_rect)
 
-    label_string = ["", "", "", "", ""]
+    label_string = ["", "", "", "", "", "", ""]
     
     if g.selected:
         label_string[0] = "There are {} troops here.".format(g.selected[0].units)
-        label_string[1] = "It is {} here.".format({grid.GRASS: "grassy", grid.WATER: "watery", grid.ROCKS: "rocky"}[g.selected[0].type])
+        if (g.getTile(xx, yy).type != grid.CITY):
+            label_string[1] = "It is {} here.".format({grid.GRASS: "grassy", grid.WATER: "watery", grid.ROCKS: "rocky"}[g.selected[0].type])
+        else:
+            ct = g.getTile(xx,yy).city
+            label_string[1] = ct
+            label_string[2] = "Population: " + str(cityData[ct]["Population"])
+            label_string[3] = "Troops: " + str(cityData[ct]["Troops"])
+            label_string[4] = "Resources: " + str(cityData[ct]["Resources"])
+            label_string[5] = "Smallpox?: " + str(cityData[ct]["Smallpox"])
+            label_string[6] = "Starvation?: " + str(cityData[ct]["Starvation"])
     else:
         label_string[0] = "You gotta select something."
     
-    for i in xrange(0,len(label_string)):
+    for i in range(0,len(label_string)):
         label = menu_font.render(label_string[i], 1, (0,0,0))
         screen.blit(label, (menu_text_x, menu_text_y + 16*i))
     

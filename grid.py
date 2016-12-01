@@ -5,19 +5,28 @@ import math
 GRASS = 0
 WATER = 1
 ROCKS = 2
+CITY = 3
 
 IMGS = ["imgs/hex_tile_grass.png"
        ,"imgs/hex_tile_water.png"
-       ,"imgs/hex_tile_rocks.png"]
+       ,"imgs/hex_tile_rocks.png"
+       ,"imgs/hex_tile_city.png"]
+
+IMGS2 = ["imgs/hex_tile_grass_far.png"
+       ,"imgs/hex_tile_water_far.png"
+       ,"imgs/hex_tile_rocks_far.png"
+       ,"imgs/hex_tile_city_far.png"]
 
 SelIMG = "imgs/hex_tile_sel.png"
 UnseenIMG = "imgs/hex_tile_unknown.png"
 
 class Tile:
-    def __init__(self, t=GRASS):
+    def __init__(self, t=GRASS, s="n/a"):
         self.type = t
         self.units = 0
         self.known = False
+        self.city = s
+        self.visible = False
 
 class Grid:
     def rectToHex(self, i, j):
@@ -44,11 +53,25 @@ class Grid:
         self.width  = width
         self.height = height
         self.size   = size
-        self.tiles  = [[Tile(GRASS) for x in range(0, width)] for y in range(0, height)]
+        self.tiles  = [[Tile(GRASS, "n/a") for x in range(0, width)] for y in range(0, height)]
+        y = 0
+        with open("map.txt", "r") as mp:
+            for line in mp:
+                for x in range(0,width):
+                    if line[x] == "R":
+                        self.tiles[x][y] = Tile(ROCKS, "n/a")
+                    elif line[x] == "G":
+                        self.tiles[x][y] = Tile(GRASS, "n/a")
+                    elif line[x] == "B":
+                        self.tiles[x][y] = Tile(WATER, "n/a")
+                y += 1
         self._imgs  = {}
+        self._imgs2 = {}
         for i in range(0, len(IMGS)):
             self._imgs[i] = pygame.image.load(IMGS[i])
             self._imgs[i] = pygame.transform.scale(self._imgs[i], (size, size)).convert_alpha()
+            self._imgs2[i] = pygame.image.load(IMGS2[i])
+            self._imgs2[i] = pygame.transform.scale(self._imgs2[i], (size, size)).convert_alpha()
         self._rect = self._imgs[0].get_rect()
         self.selected = []
         self._simg = pygame.image.load(SelIMG)
@@ -66,7 +89,10 @@ class Grid:
                 if not self.inRange(i + xi, j + yi): continue
                 tile = self.tiles[i + xi][j + yi]
                 if tile.known:
-                    img  = self._imgs[tile.type]
+                    if tile.visible == True:
+                        img  = self._imgs[tile.type]
+                    else:
+                        img = self._imgs2[tile.type]
                 else:
                     img = self._uimg
                 self._rect.x, self._rect.y = self.hexToRect(i + xi, j + yi)
@@ -82,8 +108,14 @@ class Grid:
     def getTile(self, i, j):
         return self.tiles[i][j]
 
-    def setTile(self, i, j, k):
+    def setTile(self, i, j, k, l):
         self.tiles[i][j].type = k
+        self.tiles[i][j].city = l
+
+    def setVisible(self):
+        for i in range(0, self.width):
+            for j in range(0, self.height):
+                self.getTile(i,j).visible = False
 
     def getBetween(self, i, j, n, f):
         return [(x, y)
