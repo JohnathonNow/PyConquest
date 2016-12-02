@@ -47,8 +47,6 @@ class Grid:
                + abs(ati + aj - bti - bj)
                + abs(aj - bj)) / 2
         
-
-
     def __init__(self, width = 10, height = 10, size = 32):
         self.width  = width
         self.height = height
@@ -124,10 +122,10 @@ class Grid:
                 if n <= self.hexDistance(i, j, x, y) <= f]
 
     def select(self, i, j):
-        if self.tiles[i][j].known:
-            self.selected.append(self.tiles[i][j])
-            return True
-        return False
+        #if self.tiles[i][j].known:
+        self.selected.append(self.tiles[i][j])
+        return True
+        #return False
 
     def clearSelection(self):
         self.selected = []
