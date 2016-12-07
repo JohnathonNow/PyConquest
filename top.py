@@ -93,6 +93,13 @@ while True:
     for i in range(0,len(game.label_string)):
         label = menu_font.render(game.label_string[i], 1, (0,0,0))
         screen.blit(label, (menu_text_x, menu_text_y + 16*i))
+    #draw "scroll" bar
+        scroll_x = (Vx / gTileW)*width
+        scroll_y = (Vy / gTileW)*height
+        pygame.draw.line(screen, (0, 0, 0), (scroll_x, menu_y - 2), (scroll_x, menu_y+2))
+        pygame.draw.line(screen, (130, 70, 70), (scroll_x - 1, menu_y - 2), (scroll_x - 1, menu_y+2))
+        pygame.draw.line(screen, (0, 0, 0), (14, scroll_y), (18, scroll_y))
+        pygame.draw.line(screen, (130, 70, 70), (14, scroll_y + 1), (18, scroll_y + 1))
     #flop
     pygame.display.flip()
     pygame.time.wait(sleep_time)
