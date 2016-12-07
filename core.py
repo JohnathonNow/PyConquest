@@ -1,6 +1,9 @@
 import grid
+import inputbox
 class Game:
     def __init__(self, g, s):
+        self.xt = 0
+        self.yt = 0
         self.cityData = {}
         #define cities
         self.cityData["Tenochtitlan"] = {"Population" : 1000000,
@@ -16,7 +19,11 @@ class Game:
         self.troops = {'spanish': 500}
         self.dispatched = []
         self.time = 0
-    def run(self, xx, yy):
+        self.mode = 'select'
+
+    def run(self):
+        xx = self.xt
+        yy = self.yt
         self.time += 1 #increment time
         #handle displaying useful information
         if self.grid.selected:
@@ -89,9 +96,38 @@ class Game:
     def sendMen(self, xx, yy, count):
         try:
             count = int(count)
-            if count <= self.troops['spanish']:
+            if count <= self.troops['spanish'] and count > 0:
                 self.troops['spanish'] -= count
                 self.dispatched.append( [count, self.cortez_x, self.cortez_y, xx, yy, True, self.cortez_x, self.cortez_y, [], self.time] )
         except:
             return
+        
+    def handleKeyDown(self, k):
+        pass
+
+    def handleKeyUp(self, k):
+        if k == 'space':  #move cortez
+            if self.grid.selected and self.grid.selected[0].known:
+                self.moveCortez(self.xt, self.yt)
+        elif k == 'c':    #send troops
+            if self.grid.selected:
+                c = inputbox.ask(self.screen, 'How many men?')
+                self.sendMen(self.xt, self.yt, c)
+
+    def handleClick(self, xxt, yyt):
+        self.grid.clearSelection()
+        if self.grid.select(xxt, yyt): 
+            self.xt = xxt
+            self.yt = yyt
+            if self.mode == 'move' and self.grid.selected[0].known:
+                self.moveCortez(self.xt, self.yt)
+            elif self.mode == 'dispatch':
+                c = inputbox.ask(self.screen, 'How many men?')
+                self.sendMen(self.xt, self.yt, c)
+
+    def handleMenu(self, mx, my):
+        if my > 605 and my < 650:
+            chosex = int((mx - 31) / 101)
+            if chosex < 5:
+                self.mode = ['move', 'dispatch', self.mode, self.mode, 'select'][chosex]
         

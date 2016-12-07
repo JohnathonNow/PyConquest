@@ -1,10 +1,9 @@
-#!/usr/bin/python2
+#!/usr/bin/python2 -B
 import sys
 import pygame
 import math
 import grid
 import core
-import inputbox
 
 pygame.init()
 
@@ -41,38 +40,39 @@ for (i, j) in g.getBetween(startX, startY, 0, 10):
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT: sys.exit() #handle quitting
-        if event.type == pygame.MOUSEBUTTONDOWN: #handle clicking
+        elif event.type == pygame.MOUSEBUTTONDOWN: #handle clicking
             mx, my = event.pos
-            if my < menu_y:
-                xxt, yyt = g.rectToHex(mx + Vx, my + Vy)
-                g.clearSelection()
-                if g.select(xxt, yyt): 
-                    xx, yy = xxt, yyt
-        if event.type == pygame.KEYUP:          #handle key releases
+            if event.button == 1: #handle menu or grid
+                if my < menu_y:
+                    xxt, yyt = g.rectToHex(mx + Vx, my + Vy)
+                    game.handleClick(xxt, yyt)
+                else:
+                    game.handleMenu(mx, my)
+            else: #move camera
+                Vx += mx - width/2
+                Vy += my - height/2
+        elif event.type == pygame.KEYUP:          #handle key releases
             k = pygame.key.name(event.key)
-            if k == 'left' or k == 'right': 
+            if k in ['left', 'right', 'a', 'd']: 
                 dvx = 0
-            elif k == 'down' or k == 'up':
+            elif k in ['up', 'down', 'w', 's']:
                 dvy = 0
-            elif k == 'space':  #move cortez
-                if g.selected and g.selected[0].known:
-                    game.moveCortez(xx, yy)
-            elif k == 'c':      #send troops
-                if g.selected:
-                    c = inputbox.ask(screen, 'How many men?')
-                    game.sendMen(xx, yy, c)
             elif k == 'z':      #recenter camera
                 Vx, Vy = game.cortez_x*gSize - width/2, game.cortez_y*gSize*3/4 - height/2
-        if event.type == pygame.KEYDOWN:        #handle key presses
+            else:
+                game.handleKeyUp(k)
+        elif event.type == pygame.KEYDOWN:        #handle key presses
             k = pygame.key.name(event.key)
-            if k == 'left':
+            if k in ['left', 'a']:
                 dvx = -1
-            elif k == 'down':
+            elif k in ['down', 's']:
                 dvy = 1
-            elif k == 'right':
+            elif k in ['right', 'd']:
                 dvx = 1
-            elif k == 'up':
+            elif k in ['up', 'w']:
                 dvy = -1
+            else:
+                game.handleKeyDown(k)
     #move view                
     Vx += dvx*32
     Vy += dvy*32
@@ -88,7 +88,7 @@ while True:
     #draw menu
     screen.blit(menu, menu_rect)
     #process main logic
-    game.run(xx, yy)
+    game.run()
     #draw text labels
     for i in range(0,len(game.label_string)):
         label = menu_font.render(game.label_string[i], 1, (0,0,0))
