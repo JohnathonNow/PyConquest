@@ -6,10 +6,13 @@ MOVE_INTERVAL  = 10 #number of ticks per tile it takes units to move
 LOSS_INTERVAL  = 50 #number of ticks it takes for someone to die of disease
 TLOS_INTERVAL  = LOSS_INTERVAL*5 #number of ticks for a troop to die
 SPRD_INTERVAL  = 80 #number of ticks it takes to roll for disease spreading
+WEEK_INTERVAL  = 350 #number of ticks for a "week" to pass by
+DIED_FROM_JOURNEY = 10 #1 in DIED_FROM_JOURNEY deaths per space for dispatched men
 
 SPRD_CHANCE    = 6  #1 in SPRD_CHANCE chances a disease spreads
 
 ATCK_DICE      = 12 #1 die per ATCK_DICE troops
+GOLD_DIE_SIDES = 10 #gold dice has sides 0-GOLD_DIE_SIDES
 ATCK_DIE_SIDES = 5  #attack dice has sides 0-ATCK_DIE_SIDES
 
 class Game:
@@ -21,6 +24,7 @@ class Game:
         self.cityData["Tenochtitlan"] = {"Population" : 1000000,
                                          "Troops" : 2000,
                                          "Resources" : 300,
+                                         "Gold" : 300,
                                          "Smallpox" : "No",
                                          "Starvation" : "No",
                                          "Tributers" : [],
@@ -33,9 +37,8 @@ class Game:
         self.screen = s
         #define our starting troops
         self.troops = {'spanish': 500}
-        #set up our list of dispatched units
-        self.dispatched = []
         self.time = 0        #number of gameticks that have passed
+        self.week = 1        #number of weeks that have gone by
         self.gold = 0        #cortez's amount of gold found
         self.food = 300      #cortez's food supply
         self.mode = 'select' #our current selection mode
@@ -49,9 +52,9 @@ class Game:
         yy = self.yt
         self.time += 1 #increment time
         #handle displaying useful information
+        #show current week
+        self.label_string[0] = "Week {}".format(int(self.week))
         if self.grid.selected:
-            #this label below is probably deprecated, consider changing
-            self.label_string[0] = "There are {} troops here.".format(self.grid.selected[0].units)
             #if we selected something other than a city
             if (self.grid.selected[0].type != grid.CITY):
                 #tell us what it is
@@ -66,30 +69,10 @@ class Game:
                 self.label_string[1] = ct
                 self.label_string[2] = "Population: " + str(cd["Population"])
                 self.label_string[3] = "Troops: " + str(cd["Troops"])
-                self.label_string[4] = "Resources: " + str(cd["Resources"])
+                self.label_string[4] = "Resources: " + str(cd["Resources"]) + " Gold: " + str(cd["Gold"])
                 self.label_string[5] = "Smallpox?: " + str(cd["Smallpox"])
                 self.label_string[6] = "Starvation?: " + str(cd["Starvation"])
-        else:
-            self.label_string[0] = "You gotta select something."
 
-        #"move" dispatched troops
-        if self.time % MOVE_INTERVAL == 0:
-            for group in self.dispatched:
-                #check if they're back yet
-                if (self.cortez_x == group[1] and 
-                    self.cortez_y == group[2] and
-                    self.time     >= group[5]):
-                    #if so, tell us
-                    self.label_string[7] = "Your dispatched men have returned"
-                    #highlight their destination
-                    for i, j in self.grid.getBetween(group[3], group[4], 0, 3):
-                        self.grid.getTile(i, j).known = True
-                    #reveal their path
-                    for n in group[6]:
-                        self.grid.getTile(n[0], n[1]).known = True
-                    #recover troops
-                    self.troops['spanish'] += group[0]
-                    self.dispatched.remove(group)
         #if we're in a city, maybe spread disease
         if self.time % SPRD_INTERVAL == 0:
             tile = self.grid.getTile(self.cortez_x, self.cortez_y)
@@ -128,6 +111,9 @@ class Game:
         for (i, j) in self.grid.getBetween(xx, yy, 0, 1):
             self.grid.getTile(i, j).known = True
             self.grid.getTile(i, j).visible = True
+        #calculate the elapsed time
+        dt = self.grid.hexDistance(xx, yy, self.cortez_x, self.cortez_y)*MOVE_INTERVAL/WEEK_INTERVAL
+        self.week += dt
         #perform the move
         self.cortez_x = xx
         self.cortez_y = yy
@@ -144,8 +130,23 @@ class Game:
                 self.troops['spanish'] -= count
                 #find a path for the men
                 p = self.grid.shortestPath(self.cortez_x, self.cortez_y, xx, yy)
-                #add the men to our queue
-                self.dispatched.append( (count, self.cortez_x, self.cortez_y, xx, yy, len(p) + self.time, p) )
+                #calculate the elapsed time
+                dt = len(p)*MOVE_INTERVAL/WEEK_INTERVAL
+                self.week += dt
+                #calculate how many men died
+                death = int(len(p)*random.random()/DIED_FROM_JOURNEY)
+                if death < count:
+                    self.label_string[7] = "After {} days, {} dispatched men return.".format(int(7*dt), int(count - death))
+                    #highlight their destination
+                    for i, j in self.grid.getBetween(xx, yy, 0, 3):
+                        self.grid.getTile(i, j).known = True
+                    #reveal their path
+                    for n in p:
+                        self.grid.getTile(n[0], n[1]).known = True
+                    #recover troops
+                    self.troops['spanish'] += int(count - death)
+                else:
+                    self.label_string[7] = "You wait for {} days, but no men returned.".format(int(7*dt))
         except:
             return
         
@@ -192,8 +193,17 @@ class Game:
                 cort_dice += i
             cort_dice = int(cort_dice / ATCK_DICE)
             for i in range(cort_dice):
+                #roll for attack
                 city["Troops"] -= random.randint(0, ATCK_DIE_SIDES)
+                #roll for stolen gold
+                stolen = random.randint(0, GOLD_DIE_SIDES)
+                #can't steal more than they have
+                if city["Gold"] < stolen: stolen = city["Gold"]
+                #take it!
+                city["Gold"] -= stolen
+                self.gold += stolen
             for i in range(city_dice):
+                #roll for getting attacked
                 self.troops["spanish"] -= random.randint(0, ATCK_DIE_SIDES)
         else:
             #set the notification
