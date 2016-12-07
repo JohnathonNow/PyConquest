@@ -1,6 +1,7 @@
 import pygame
 import math
-
+import random
+import queue
 
 GRASS = 0
 WATER = 1
@@ -19,6 +20,8 @@ IMGS2 = ["imgs/hex_tile_grass_far.png"
 
 SelIMG = "imgs/hex_tile_sel.png"
 UnseenIMG = "imgs/hex_tile_unknown.png"
+
+ADJACENTS   = [(0, 1), (0, -1), (1, 0), (-1, 0), (1, -1), (1, 1)]
 
 class Tile:
     def __init__(self, t=GRASS, s="n/a"):
@@ -119,7 +122,8 @@ class Grid:
         return [(x, y)
                 for x in range(i-n-f-f, i+n+f+f)
                 for y in range(j-n-f-f, j+n+f+f)
-                if n <= self.hexDistance(i, j, x, y) <= f]
+                if self.inRange(x, y) and
+                n <= self.hexDistance(i, j, x, y) <= f]
 
     def select(self, i, j):
         #if self.tiles[i][j].known:
@@ -131,4 +135,34 @@ class Grid:
         self.selected = []
 
     def getAdjacent(self, i, j):
-        return self.getBetween(i, j, 1, 1)
+        #return self.getBetween(i, j, 1, 1)
+        if j%2 == 0:
+            return [(x + i - (y + j)%2, y + j) 
+                    for (x, y) in ADJACENTS
+                    if self.inRange(x + i - (y + j)%2, y + j)]
+        else:
+            return [(x + i, y + j) 
+                    for (x, y) in ADJACENTS                                                       if self.inRange(x + i, y + j)]
+
+
+    def shortestPath(self, sx, sy, ex, ey):
+        marked = {}
+        q = queue.PriorityQueue()
+        while self.getTile(ex, ey).type != GRASS:
+            ex, ey = random.choice(self.getAdjacent(ex, ey))
+        q.put((0, ((ex, ey), (ex, ey))))
+        while not q.empty():
+            v = q.get()
+            if v[1][0] in marked: continue
+            marked[v[1][0]] = v[1][1]
+            if v[1][0] == (sx, sy): break
+            for u in self.getAdjacent(v[1][0][0], v[1][0][1]):
+                h = self.hexDistance(u[0], u[1], sx, sy)
+                if self.getTile(u[0], u[1]).type == GRASS:
+                    q.put((1 + v[0] + h, (u, v[1][0])))
+        path = set()
+        v = (sx, sy)
+        while not v == (ex, ey):
+            path.add(v)
+            v = marked[v]
+        return path

@@ -45,38 +45,17 @@ class Game:
         #move dispatched troops
         if self.time % 10 == 0:
             for group in self.dispatched:
-                px = group[1]
-                py = group[2]
-                t = self.grid.getTile(px, py)
-                #keep track of where we've been
-                group[8].append(t)
-                #make us win
-                if group[1] > group[3]: group[1] -= 1
-                if group[2] > group[4]: group[2] -= 1
-                if group[1] < group[3]: group[1] += 1
-                if group[2] < group[4]: group[2] += 1
-                #make us in grass
-                if t.type != grid.GRASS:
-                    group[1] = px + 1
-                    group[2] = py
-                #when we reach our destination, turn around
-                #bright eyes
-                if group[1] == group[3] and group[2] == group[4]:
-                    if group[5]:
-                        group[5] = False
-                        group[3] = group[6] #set new destination to origin
-                        group[4] = group[7] #set new destination to origin
-                        group[6] = group[1] #set new origin to old destination
-                        group[7] = group[2] #set new origin to old destination
-                    elif self.cortez_x == group[1] and self.cortez_y == group[2]:
-                        self.label_string[7] = "Your dispatched troups have returned"
-                        for (i, j) in self.grid.getBetween(group[6], group[7], 0, 3):
-                            self.grid.getTile(i, j).known = True
-                        for n in group[8]:
-                            n.known = True
-                        #recover troops
-                        self.troops['spanish'] += group[0]
-                        self.dispatched.remove(group)
+                if (self.cortez_x == group[1] and 
+                    self.cortez_y == group[2] and
+                    self.time     >= group[5]):
+                    self.label_string[7] = "Your dispatched troups have returned"
+                    for (i, j) in self.grid.getBetween(group[3], group[4], 0, 3):
+                        self.grid.getTile(i, j).known = True
+                    for n in group[6]:
+                        self.grid.getTile(n[0], n[1]).known = True
+                    #recover troops
+                    self.troops['spanish'] += group[0]
+                    self.dispatched.remove(group)
           
         self.label_string[8] = 'Men: ' + ', '.join(['{} {}'.format(self.troops[x], x) for x in self.troops])
                 
@@ -98,7 +77,8 @@ class Game:
             count = int(count)
             if count <= self.troops['spanish'] and count > 0:
                 self.troops['spanish'] -= count
-                self.dispatched.append( [count, self.cortez_x, self.cortez_y, xx, yy, True, self.cortez_x, self.cortez_y, [], self.time] )
+                p = self.grid.shortestPath(self.cortez_x, self.cortez_y, xx, yy)
+                self.dispatched.append( (count, self.cortez_x, self.cortez_y, xx, yy, len(p) + self.time, p) )
         except:
             return
         
