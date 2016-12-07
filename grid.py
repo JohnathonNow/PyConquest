@@ -144,24 +144,32 @@ class Grid:
             return [(x + i, y + j) 
                     for (x, y) in ADJACENTS                                                       if self.inRange(x + i, y + j)]
 
-
+    #use A* to find the shortest path
+    #between (sx, sy) and (ex, ey)
+    #returns a set of visited tiles
     def shortestPath(self, sx, sy, ex, ey):
         marked = {}
         q = queue.PriorityQueue()
+        #we cannot go to a non-grass tile,
+        #so random walk until we get to one
         while self.getTile(ex, ey).type != GRASS:
             ex, ey = random.choice(self.getAdjacent(ex, ey))
+        #start A*
         q.put((0, ((ex, ey), (ex, ey))))
         while not q.empty():
             v = q.get()
-            if v[1][0] in marked: continue
-            marked[v[1][0]] = v[1][1]
-            if v[1][0] == (sx, sy): break
-            for u in self.getAdjacent(v[1][0][0], v[1][0][1]):
-                h = self.hexDistance(u[0], u[1], sx, sy)
-                if self.getTile(u[0], u[1]).type == GRASS:
+            if v[1][0] in marked: continue #we've been here, so leave
+            marked[v[1][0]] = v[1][1] #mark the current entry
+            if v[1][0] == (sx, sy): break #stop when we find our destination
+            for u in self.getAdjacent(v[1][0][0], v[1][0][1]): #add neighbors
+                h = self.hexDistance(u[0], u[1], sx, sy) #calculate heuristic
+                if self.getTile(u[0], u[1]).type == GRASS: #only visit grass
+                    #"best" path is the least tiles + prefer tiles closer
+                    #to our destination
                     q.put((1 + v[0] + h, (u, v[1][0])))
         path = set()
         v = (sx, sy)
+        #add the path to the set
         while not v == (ex, ey):
             path.add(v)
             v = marked[v]

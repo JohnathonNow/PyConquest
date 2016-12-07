@@ -19,6 +19,8 @@ class Game:
         self.troops = {'spanish': 500}
         self.dispatched = []
         self.time = 0
+        self.gold = 0
+        self.food = 300
         self.mode = 'select'
 
     def run(self):
@@ -48,7 +50,7 @@ class Game:
                 if (self.cortez_x == group[1] and 
                     self.cortez_y == group[2] and
                     self.time     >= group[5]):
-                    self.label_string[7] = "Your dispatched troups have returned"
+                    self.label_string[7] = "Your dispatched men have returned"
                     for (i, j) in self.grid.getBetween(group[3], group[4], 0, 3):
                         self.grid.getTile(i, j).known = True
                     for n in group[6]:
@@ -58,6 +60,8 @@ class Game:
                     self.dispatched.remove(group)
           
         self.label_string[8] = 'Men: ' + ', '.join(['{} {}'.format(self.troops[x], x) for x in self.troops])
+
+        self.label_string[8] = 'Gold: {}'.format(self.gold)
                 
             
     def moveCortez(self, xx, yy):
@@ -76,6 +80,7 @@ class Game:
         try:
             count = int(count)
             if count <= self.troops['spanish'] and count > 0:
+                self.label_string[7] = "You dispatched {} men.".format(count)
                 self.troops['spanish'] -= count
                 p = self.grid.shortestPath(self.cortez_x, self.cortez_y, xx, yy)
                 self.dispatched.append( (count, self.cortez_x, self.cortez_y, xx, yy, len(p) + self.time, p) )
