@@ -8,6 +8,8 @@ WATER = 1
 ROCKS = 2
 CITY = 3
 
+PASSABLE = [GRASS, CITY]
+
 IMGS = ["imgs/hex_tile_grass.png"
        ,"imgs/hex_tile_water.png"
        ,"imgs/hex_tile_rocks.png"
@@ -152,7 +154,7 @@ class Grid:
         q = queue.PriorityQueue()
         #we cannot go to a non-grass tile,
         #so random walk until we get to one
-        while self.getTile(ex, ey).type != GRASS:
+        while self.getTile(ex, ey).type not in PASSABLE:
             ex, ey = random.choice(self.getAdjacent(ex, ey))
         #start A*
         q.put((0, ((ex, ey), (ex, ey))))
@@ -163,7 +165,7 @@ class Grid:
             if v[1][0] == (sx, sy): break #stop when we find our destination
             for u in self.getAdjacent(v[1][0][0], v[1][0][1]): #add neighbors
                 h = self.hexDistance(u[0], u[1], sx, sy) #calculate heuristic
-                if self.getTile(u[0], u[1]).type == GRASS: #only visit grass
+                if self.getTile(u[0], u[1]).type in PASSABLE: #only visit valids
                     #"best" path is the least tiles + prefer tiles closer
                     #to our destination
                     q.put((1 + v[0] + h, (u, v[1][0])))
