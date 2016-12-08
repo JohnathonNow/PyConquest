@@ -12,7 +12,7 @@ DIED_FROM_JOURNEY = 10 #1 in DIED_FROM_JOURNEY deaths per space for dispatched m
 SPRD_CHANCE    = 6  #1 in SPRD_CHANCE chances a disease spreads
 
 ATCK_DICE      = 12 #1 die per ATCK_DICE troops
-GOLD_DIE_SIDES = 10 #gold dice has sides 0-GOLD_DIE_SIDES
+GOLD_DIE_SIDES = 1000 #gold dice has sides 0-GOLD_DIE_SIDES
 ATCK_DIE_SIDES = 5  #attack dice has sides 0-ATCK_DIE_SIDES
 
 class Game:
@@ -21,16 +21,54 @@ class Game:
         self.yt = 0
         self.cityData = {}
         #define cities
+        for (i, j) in g.getBetween(118, 298, 0, 1):
+            g.getTile(i, j).type = grid.WATER
+        g.getTile(118, 296).city = "Tenochtitlan"
+        g.getTile(118, 296).type = grid.CITY
         self.cityData["Tenochtitlan"] = {"Population" : 1000000,
-                                         "Troops" : 2000,
+                                         "Troops" : 6000,
                                          "Resources" : 300,
-                                         "Gold" : 300,
+                                         "Gold" : 420000,
+                                         "Smallpox" : "No",
+                                         "Starvation" : "No",
+                                         "Tributers" : ["Tlatelolco", "Cholula"],
+                                         "Trust" : 0,
+                                        }
+        g.getTile(118, 295).city = "Tlatelolco"
+        g.getTile(118, 295).type = grid.CITY
+        self.cityData["Tlatelolco"] = {"Population" : 30000,
+                                         "Troops" : 200,
+                                         "Resources" : 3000,
+                                         "Gold" : 30000,
                                          "Smallpox" : "No",
                                          "Starvation" : "No",
                                          "Tributers" : [],
+                                         "Trust" : 0,
+                                        }
+        g.getTile(102, 297).city = "Cholula"
+        g.getTile(102, 297).type = grid.CITY
+        self.cityData["Cholula"] = {"Population" : 100000,
+                                         "Troops" : 120,
+                                         "Resources" : 3000,
+                                         "Gold" : 9000,
+                                         "Smallpox" : "No",
+                                         "Starvation" : "No",
+                                         "Tributers" : [],
+                                         "Trust" : 0,
+                                        }
+        g.getTile(148, 300).city = "Tlaxcala"
+        g.getTile(148, 300).type = grid.CITY
+        self.cityData["Tlaxcala"] = {"Population" : 300000,
+                                         "Troops" : 6000,
+                                         "Resources" : 30000,
+                                         "Gold" : 30000,
+                                         "Smallpox" : "No",
+                                         "Starvation" : "No",
+                                         "Tributers" : [],
+                                         "Trust" : 0
                                         }
         #set up our text box text
-        self.label_string = ["", "", "", "", "", "", "", "", "", ""]
+        self.label_string = [""] * 10
         self.cortez_x, self.cortez_y = 520, 300 #cortez starting location
         #grab the grid and screen from top.py
         self.grid = g
@@ -42,10 +80,6 @@ class Game:
         self.gold = 0        #cortez's amount of gold found
         self.food = 300      #cortez's food supply
         self.mode = 'select' #our current selection mode
-
-        #define cities
-        g.getTile(520, 301).city = "Tenochtitlan"
-        g.getTile(520, 301).type = grid.CITY
 
     def run(self):
         xx = self.xt
@@ -167,6 +201,7 @@ class Game:
         if self.grid.select(xxt, yyt): 
             self.xt = xxt
             self.yt = yyt
+            print((xxt, yyt))
             if self.mode == 'move' and self.grid.selected[0].known:
                 self.moveCortez(self.xt, self.yt)
             elif self.mode == 'dispatch':
@@ -195,6 +230,11 @@ class Game:
             for i in range(cort_dice):
                 #roll for attack
                 city["Troops"] -= random.randint(0, ATCK_DIE_SIDES)
+                if city["Troops"] <= 0:
+                    city["Troops"] = 0
+                    city["Population"] -= random.randint(0, ATCK_DIE_SIDES*1000)
+                    if city["Population"] < 0:
+                        city["Population"] = 0
                 #roll for stolen gold
                 stolen = random.randint(0, GOLD_DIE_SIDES)
                 #can't steal more than they have
@@ -205,9 +245,34 @@ class Game:
             for i in range(city_dice):
                 #roll for getting attacked
                 self.troops["spanish"] -= random.randint(0, ATCK_DIE_SIDES)
+                if self.troops["spanish"] < 0:
+                    self.troops["spanish"] = 0 #GAME OVER
         else:
             #set the notification
             self.label_string[7] = "Who are you fighting?"
 
     def talk(self):
-        pass
+        tile = self.grid.getTile(self.cortez_x, self.cortez_y)
+        if tile.type == grid.CITY:
+            city = self.cityData[tile.city]
+            if tile.city == "Tlaxcala":
+                if city["Trust"] == 0:
+                    self.troops["spanish"] -= random.randint(0, ATCK_DIE_SIDES*3)
+                    self.label_string[7] = "The Tlaxcalans attack, but stop after 15 days."
+                    self.week += 15/7
+                    city["Trust"] = 1
+                elif city["Trust"] > 0:
+                    c = "~"
+                    while c[0] not in "yn":
+                        c = inputbox.ask(self.screen, 'Ally with Tlaxcala? (yes or no)')
+                        if c[0] in "y":
+                            self.troops["tlaxcalan"] = self.troops.get("tlaxcalan", city["Troops"])
+                            city["Troops"] = 0
+                            self.label_string[7] = "The Tlaxcalans agree to an alliance with you."
+                        else:
+                            city["Trust"] = -1
+                elif city["Trust"] < 0:
+                    self.fight()
+        else:
+            #set the notification
+            self.label_string[7] = "Talking to yourself will get you nowhere."
