@@ -1,6 +1,7 @@
 import grid
 import inputbox
 import random
+import time
 
 MOVE_INTERVAL  = 10 #number of ticks per tile it takes units to move
 LOSS_INTERVAL  = 50 #number of ticks it takes for someone to die of disease
@@ -19,6 +20,8 @@ class Game:
     def __init__(self, g, s):
         self.xt = 0
         self.yt = 0
+        self.wait = 0
+        self.DonaMaria = 0
         self.cityData = {}
         #define cities
         for (i, j) in g.getBetween(118, 298, 0, 1):
@@ -55,6 +58,11 @@ class Game:
                                          "Starvation" : "No",
                                          "Tributers" : [],
                                          "Trust" : 0,
+                                         "Initial" : "You enter the massive square of Cholula where you are met by a seemingly friendly group of warriors and noblemen. Your translator tells you that they plan to attack on your way out of the city.",
+                                         "IA" : 0,
+                                         "Reject" : "You massacre the warriors and noblemen and burn down the city. Maybe this will send a message to Tenochtitlan.",
+                                         "RA" : 5,
+                                         "RK" : True
                                         }
         g.getTile(148, 300).city = "Tlaxcala"
         g.getTile(148, 300).type = grid.CITY
@@ -65,7 +73,73 @@ class Game:
                                          "Smallpox" : "No",
                                          "Starvation" : "No",
                                          "Tributers" : [],
-                                         "Trust" : 0
+                                         "Trust" : 0,
+                                         "Initial" : "Tlaxcala is currently engaged in a perpetual war against Tenochtitlan and the rest of the Triple Alliance. The Tlaxcalteca initially attack your party. You would have lost the battle had their war chief not been persuaded to stop fighting in favor of a strategic alliance with you.",
+                                         "IA" : 100,
+                                         "Reject" : "Since you rejected the alliance, the Tlaxcalteca continue to attack and completely massacre you.",
+                                         "RA" : 30000,
+                                         "RK" : False
+                                        }
+        g.getTile(153, 272).city = "Texcoco"
+        g.getTile(153, 272).type = grid.CITY
+        self.cityData["Texcoco"] = {"Population" : 25000,
+                                        "Troops" : 2000,
+                                        "Resources" : 300,
+                                        "Gold" : 50000,
+                                        "Smallpox" : "No",
+                                        "Starvation" : "No",
+                                        "Tributers" : [],
+                                        "Trust" : 0,
+                                        "Initial" : "Texcoco is one of the largest and most powerful cities in Acolhua with plenty of resources. It seems as though their alliance with Tenochtitlan is suffering due to Montezuma's arrogance and attempts to diminish their power. It could be a strategic location for a base of operations.",
+                                        "IA" : 0,
+                                        "Reject" : "Fearing you've sided with Tenochtitlan, Texcoco attacks you as you try to retreat, killing several of your men.",
+                                        "RA" : 200,
+                                        "RK" : False
+                                        }
+        g.getTile(518, 305).city = "Potonchan"
+        g.getTile(518, 305).type = grid.CITY
+        self.cityData["Potonchan"] = {"Population" : 200,
+                                        "Troops" : 50,
+                                        "Resources" : 300,
+                                        "Gold" : 10000,
+                                        "Smallpox" : "No",
+                                        "Starvation" : "No",
+                                        "Tributers" : [],
+                                        "Trust" : 0
+                                        }
+        g.getTile(470, 291).city = "Xalapa"
+        g.getTile(470, 291).type = grid.CITY
+        self.cityData["Xalapa"] = {"Population" : 100,
+                                        "Troops" : 50,
+                                        "Resources" : 300,
+                                        "Gold" : 10000,
+                                        "Smallpox" : "No",
+                                        "Starvation" : "No",
+                                        "Tributers" : [],
+                                        "Trust" : 0,
+                                        "Initial" : "Xalapa has a very low population and seems very friendly towards your party. They also seem very receptive towards Christianity.",
+                                        "IA" : 0,
+                                        "Reject" : "You burn the small town of Xalapa to the ground. You gain nothing.",
+                                        "RA" : 5,
+                                        "RK" : True,
+                                        "Intel" : "They tell you that you might find the city of Texcoco important in your conquest. It is located at (153, 272)."
+                                        }
+        g.getTile(500, 283).city = "Zempoala"
+        g.getTile(500, 283).type = grid.CITY
+        self.cityData["Zempoala"] = {"Population" : 25000,
+                                        "Troops" : 3000,
+                                        "Resources" : 5000,
+                                        "Gold" : 10000,
+                                        "Smallpox" : "No",
+                                        "Starvation" : "No",
+                                        "Tributers" : [],
+                                        "Trust" : 0,
+                                        "Initial" : "20 Zempoala noblemen greet you with various gifts, including gold, as you enter the city. The complain that they have been dominated by the Aztec armies for years and would like to form an alliance to take them down.",
+                                        "IA" : 0,
+                                        "Reject" : "By rejecting their offer for an alliance, you have given the Zempoala the impression that you are alligned with the Aztecs. They slaughter your small group of men.",
+                                        "RA" : 1000,
+                                        "RK" : False,
+                                        "Intel" : "There is a small town called Xalapa at coordinates (470, 291). They urge you to take their finest warriors with you."
                                         }
         #set up our text box text
         self.label_string = [""] * 10
@@ -74,7 +148,7 @@ class Game:
         self.grid = g
         self.screen = s
         #define our starting troops
-        self.troops = {'spanish': 500}
+        self.troops = {'spanish': 500, 'nahua' : 0}
         self.time = 0        #number of gameticks that have passed
         self.week = 1        #number of weeks that have gone by
         self.gold = 0        #cortez's amount of gold found
@@ -84,6 +158,7 @@ class Game:
     def run(self):
         xx = self.xt
         yy = self.yt
+        inputbox.coordinates(self.screen, self.xt, self.yt)
         self.time += 1 #increment time
         #handle displaying useful information
         #show current week
@@ -92,6 +167,8 @@ class Game:
             #if we selected something other than a city
             if (self.grid.selected[0].type != grid.CITY):
                 #tell us what it is
+                self.label_string = [""] * 10
+                self.label_string[0] = "Week {}".format(int(self.week))
                 self.label_string[1] = "It is {} here.".format(
                     {grid.GRASS: "grassy",
                      grid.WATER: "watery",
@@ -123,11 +200,13 @@ class Game:
                     #can troops starve?
                     #if self.time % TLOS_INTERVAL == 0:
                     #    city["Troops"] -= 1
-                if city["Smallpox"]   != "No": 
-                    city["Population"] -= 1
+                if city["Smallpox"]   != "No":
+                    if city["Population"] > 0: 
+                        city["Population"] -= 1
                     #have troops die less often from disease
                     if self.time % TLOS_INTERVAL == 0:
-                        city["Troops"] -= 1
+                        if city["Troops"] > 0:
+                            city["Troops"] -= 1
         #troops label
         self.label_string[8] = 'Men: ' + ', '.join(['{} {}'.format(self.troops[x], x) for x in self.troops])
 
@@ -136,6 +215,7 @@ class Game:
                 
             
     def moveCortez(self, xx, yy):
+        #self.label_string = []
         if self.grid.getTile(xx, yy).type not in grid.PASSABLE: return
         #we can only move on grass/city, so return if we can't go
         #hide old tiles
@@ -202,6 +282,7 @@ class Game:
             self.xt = xxt
             self.yt = yyt
             print((xxt, yyt))
+            #inputbox.coordinates(screen, xxt, yyt)
             if self.mode == 'move' and self.grid.selected[0].known:
                 self.moveCortez(self.xt, self.yt)
             elif self.mode == 'dispatch':
@@ -235,6 +316,11 @@ class Game:
                     city["Population"] -= random.randint(0, ATCK_DIE_SIDES*1000)
                     if city["Population"] < 0:
                         city["Population"] = 0
+                        if tile.city == "Potonchan":
+                            if self.DonaMaria == 0:
+                                self.DonaMaria = 1
+                                #print("hi")
+                                inputbox.message_box(self.screen, "In victory you acquired 20 slaves. One of these slaves seems as though she can translate for you. You can now use her as a translator to communicate with cities. If you trust her, that is.")
                 #roll for stolen gold
                 stolen = random.randint(0, GOLD_DIE_SIDES)
                 #can't steal more than they have
@@ -255,24 +341,46 @@ class Game:
         tile = self.grid.getTile(self.cortez_x, self.cortez_y)
         if tile.type == grid.CITY:
             city = self.cityData[tile.city]
-            if tile.city == "Tlaxcala":
+            if self.DonaMaria == 1:
                 if city["Trust"] == 0:
-                    self.troops["spanish"] -= random.randint(0, ATCK_DIE_SIDES*3)
-                    self.label_string[7] = "The Tlaxcalans attack, but stop after 15 days."
+                    inputbox.message_box(self.screen, city["Initial"])
+                    if self.troops["nahua"] > 0:
+                        self.troops["nahua"] -= city["IA"]
+                        if self.troops["nahua"] < 0:
+                            self.troops["spanish"] += self.troops["nahua"]
+                            self.troops["nahua"] = 0
+                    else:
+                        self.troops["spanish"] -= city["IA"]
                     self.week += 15/7
-                    city["Trust"] = 1
-                elif city["Trust"] > 0:
                     c = "~"
                     while c[0] not in "yn":
-                        c = inputbox.ask(self.screen, 'Ally with Tlaxcala? (yes or no)')
+                        c = inputbox.ask(self.screen, 'Ally with ' + tile.city + '? (yes or no)')
                         if c[0] in "y":
-                            self.troops["tlaxcalan"] = self.troops.get("tlaxcalan", city["Troops"])
+                            self.troops["nahua"] = self.troops['nahua'] + city["Troops"]
                             city["Troops"] = 0
-                            self.label_string[7] = "The Tlaxcalans agree to an alliance with you."
+                            city["Trust"] = 1
+                            self.label_string[7] = tile.city + " agrees to an alliance with you."
                         else:
                             city["Trust"] = -1
+                            inputbox.message_box(self.screen, city["Reject"])
+                            if self.troops["nahua"] > 0:
+                                self.troops["nahua"] -= city["IA"]
+                                if self.troops["nahua"] < 0:
+                                    self.troops["spanish"] += self.troops["nahua"]
+                                    self.troops["nahua"] = 0
+                            else:
+                                self.troops["spanish"] -= city["IA"]
+                            if city["RK"]:
+                                city["Troops"] = 0
+                                city["Population"] = 0
+                    #city["Trust"] = 1
+                elif city["Trust"] > 0:
+                    if "Intel" in city.keys():
+                        input.message_box(self.screen, city["Intel"])
                 elif city["Trust"] < 0:
                     self.fight()
+            else:
+                inputbox.message_box(self.screen, "You cannot effectively communicate with cites because you do not know the language. Perhaps a translator would help...")
         else:
             #set the notification
             self.label_string[7] = "Talking to yourself will get you nowhere."

@@ -101,5 +101,6 @@ while True:
         pygame.draw.line(screen, (0, 0, 0), (14, scroll_y), (18, scroll_y))
         pygame.draw.line(screen, (130, 70, 70), (14, scroll_y + 1), (18, scroll_y + 1))
     #flop
+    
     pygame.display.flip()
     pygame.time.wait(sleep_time)
