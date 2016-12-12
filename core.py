@@ -2,6 +2,7 @@ import grid
 import inputbox
 import random
 import time
+import sys
 
 MOVE_INTERVAL  = 10 #number of ticks per tile it takes units to move
 LOSS_INTERVAL  = 50 #number of ticks it takes for someone to die of disease
@@ -156,6 +157,12 @@ class Game:
         self.mode = 'select' #our current selection mode
 
     def run(self):
+        if self.troops['spanish'] <= 0 and self.troops['nahua'] <= 0:
+            self.troops['spanish'] = 0
+            self.troops['nahua'] = 0
+            gameover = 'And with that, Hernan Cortes made one too many reckless decisions as he and his men met their demise in the heart of Mesoamerica. The course of history as we how it has changed drastically. Would these altepetls still exist today in some form? There is no way to know. All we do know is that you lost this game.'
+            inputbox.message_box(self.screen, gameover)
+            sys.exit()
         xx = self.xt
         yy = self.yt
         inputbox.coordinates(self.screen, self.xt, self.yt)
@@ -364,19 +371,19 @@ class Game:
                             city["Trust"] = -1
                             inputbox.message_box(self.screen, city["Reject"])
                             if self.troops["nahua"] > 0:
-                                self.troops["nahua"] -= city["IA"]
+                                self.troops["nahua"] -= city["RA"]
                                 if self.troops["nahua"] < 0:
                                     self.troops["spanish"] += self.troops["nahua"]
                                     self.troops["nahua"] = 0
                             else:
-                                self.troops["spanish"] -= city["IA"]
+                                self.troops["spanish"] -= city["RA"]
                             if city["RK"]:
                                 city["Troops"] = 0
                                 city["Population"] = 0
                     #city["Trust"] = 1
                 elif city["Trust"] > 0:
                     if "Intel" in city.keys():
-                        input.message_box(self.screen, city["Intel"])
+                        inputbox.message_box(self.screen, city["Intel"])
                 elif city["Trust"] < 0:
                     self.fight()
             else:
